@@ -1,0 +1,4 @@
+/cov.out
+/coverage.out
+*.test
+/proto/
