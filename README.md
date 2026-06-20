@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/go-simd/brand/main/social/go-simd.png" alt="go-simd/crc64" width="720"></p>
+
 # crc64
 
 [![ci](https://github.com/go-simd/crc64/actions/workflows/ci.yml/badge.svg)](https://github.com/go-simd/crc64/actions/workflows/ci.yml)
@@ -87,22 +89,9 @@ the scalar path, so small inputs are never slower than the standard library.
 shows the same large-buffer advantage over the standard library (≈2× in a
 virtualized measurement environment; native silicon is higher).
 
-**ppc64le (`VPMSUMD`):** measured on real POWER10 silicon (ppc64le VSX, GCC
-Compile Farm, https://portal.cfarm.net/ , Go 1.26.4, June 2026): 1 MiB ~5.7×
-stdlib (5129 vs 895 MB/s), 16 KiB ~4.8× (4007 vs 839 MB/s), via CLMUL/VSX
-folding.
-
-**riscv64 (scalar by design):** Go does not yet expose the Zbc carry-less
-multiply, so riscv64 has no CLMUL kernel and runs the portable scalar fallback.
-This is now **measured on a real SpacemiT X60** (RVV 1.0, GCC Compile Farm, Go
-1.26.4, June 2026): at 1 MiB ~stdlib parity (177 vs 175 MB/s) — exactly as
-expected for a scalar path. The X60 is a low-power, *in-order* core and is
-currently the only widely-available RVV 1.0 silicon; a CLMUL/Zbc kernel would
-need that instruction first.
-
-**s390x (`VGFMAG`):** the kernel is validated for correctness under QEMU; native
-throughput is still pending (no GitHub-hosted IBM Z runner), so no native s390x
-numbers are claimed.
+**ppc64le / s390x:** the `VPMSUMD` and `VGFMAG` kernels are validated for
+correctness under QEMU; native-hardware performance numbers are pending access to
+real POWER / Z systems.
 
 ## Testing
 
@@ -111,10 +100,6 @@ both ISO and ECMA on arbitrary inputs, plus exhaustive length sweeps across all
 block boundaries for ISO, ECMA and a custom polynomial. CI runs on native
 amd64/arm64 and under QEMU for riscv64, loong64, ppc64le (power9) and s390x, with
 a 100 %-statement-coverage gate on every architecture.
-
-The six SIMD targets are validated on seven architectures: the portable scalar
-fallback is additionally proven bit-exact on ppc64 (big-endian) on real POWER9
-silicon — a big-endian target distinct from the s390x vector kernel.
 
 ## License
 
