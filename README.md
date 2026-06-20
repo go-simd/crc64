@@ -92,6 +92,14 @@ Compile Farm, https://portal.cfarm.net/ , Go 1.26.4, June 2026): 1 MiB ~5.7×
 stdlib (5129 vs 895 MB/s), 16 KiB ~4.8× (4007 vs 839 MB/s), via CLMUL/VSX
 folding.
 
+**riscv64 (scalar by design):** Go does not yet expose the Zbc carry-less
+multiply, so riscv64 has no CLMUL kernel and runs the portable scalar fallback.
+This is now **measured on a real SpacemiT X60** (RVV 1.0, GCC Compile Farm, Go
+1.26.4, June 2026): at 1 MiB ~stdlib parity (177 vs 175 MB/s) — exactly as
+expected for a scalar path. The X60 is a low-power, *in-order* core and is
+currently the only widely-available RVV 1.0 silicon; a CLMUL/Zbc kernel would
+need that instruction first.
+
 **s390x (`VGFMAG`):** the kernel is validated for correctness under QEMU; native
 throughput is still pending (no GitHub-hosted IBM Z runner), so no native s390x
 numbers are claimed.
