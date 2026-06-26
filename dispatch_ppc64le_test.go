@@ -6,12 +6,18 @@ import (
 	stdcrc64 "hash/crc64"
 	"math/rand"
 	"testing"
+
+	"golang.org/x/sys/cpu"
 )
 
 // TestDispatchPPC64LE drives both update() branches — the VPMSUMD kernel and the
 // stdlib scalar fallback — and compares the assembly kernel against the portable
-// Go reference. VSX is baseline on POWER8+, so the kernel path always runs in
-// practice; the fallback is forced here for branch coverage.
+// Go reference. The VPMSUMD fold emits ISA-3.0 (POWER9) instructions (MTVSRDD)
+// that raise SIGILL on POWER8, so the kernel-forcing branches run only when the
+// host is actually POWER9+ (mirroring the amd64 force tests, which skip when the
+// CPU lacks the feature). The scalar-fallback branch is always exercised. The
+// power9-targeted QEMU CI job and the native POWER9/POWER10 farm runs cover the
+// kernel branch.
 func TestDispatchPPC64LE(t *testing.T) {
 	saved := hasKernel
 	defer func() { hasKernel = saved }()
@@ -31,8 +37,16 @@ func TestDispatchPPC64LE(t *testing.T) {
 		}
 	}
 
+	// Scalar fallback: always safe, exercised on every ppc64le host.
 	hasKernel = false
 	check("fallback")
+
+	// VPMSUMD kernel: only force it on when the CPU is POWER9+, otherwise the
+	// MTVSRDD in foldKernel would SIGILL (e.g. on a POWER8 farm node).
+	if !cpu.PPC64.IsPOWER9 {
+		t.Log("CPU is pre-POWER9; VPMSUMD kernel branch not exercised on this host")
+		return
+	}
 	hasKernel = true
 	check("vpmsumd")
 
