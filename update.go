@@ -9,8 +9,13 @@ import (
 // the per-call setup (constant lookup, the 128->64 reduction and the scalar
 // tail) outweighs the fold's throughput advantage, so the stdlib scalar path is
 // used instead. Measured crossover on native amd64/arm64 is a few hundred bytes;
-// 512 keeps the kernel strictly in its winning regime.
-const minBulk = 512
+// 512 keeps the kernel strictly in its winning regime there. It is a var because
+// the POWER8 crossover is higher: on POWER8E (cfarm112) the VPMSUMD kernel only
+// overtakes the scalar table path around 4 KiB (the MTVSRD/XXPERMDI vector-build
+// is slower than POWER9's single MTVSRDD), so kernel_ppc64le.go raises it to
+// 4096 on pre-POWER9 ppc64le. POWER9+ keeps the 512 default (kernel wins from
+// ~1 KiB, measured on cfarm433).
+var minBulk = 512
 
 // polyOf recovers the reflected polynomial from a table. In hash/crc64's
 // reflected table, entry 128 (0b1000_0000) shifts its single set bit down to

@@ -6,18 +6,15 @@ import (
 	stdcrc64 "hash/crc64"
 	"math/rand"
 	"testing"
-
-	"golang.org/x/sys/cpu"
 )
 
 // TestDispatchPPC64LE drives both update() branches — the VPMSUMD kernel and the
 // stdlib scalar fallback — and compares the assembly kernel against the portable
-// Go reference. The VPMSUMD fold emits ISA-3.0 (POWER9) instructions (MTVSRDD)
-// that raise SIGILL on POWER8, so the kernel-forcing branches run only when the
-// host is actually POWER9+ (mirroring the amd64 force tests, which skip when the
-// CPU lacks the feature). The scalar-fallback branch is always exercised. The
-// power9-targeted QEMU CI job and the native POWER9/POWER10 farm runs cover the
-// kernel branch.
+// Go reference. The VPMSUMD fold is now built entirely from ISA-2.07 ops
+// (VPMSUMD + MTVSRD/MFVSRD/XXPERMDI), the ppc64le/POWER8 baseline, so the kernel
+// runs on every ppc64le host (POWER8 included) and both branches are exercised
+// unconditionally here. The QEMU power8 and power9 CI jobs plus the native
+// POWER8E/POWER9 farm runs all cover the kernel branch.
 func TestDispatchPPC64LE(t *testing.T) {
 	saved := hasKernel
 	defer func() { hasKernel = saved }()
@@ -41,12 +38,8 @@ func TestDispatchPPC64LE(t *testing.T) {
 	hasKernel = false
 	check("fallback")
 
-	// VPMSUMD kernel: only force it on when the CPU is POWER9+, otherwise the
-	// MTVSRDD in foldKernel would SIGILL (e.g. on a POWER8 farm node).
-	if !cpu.PPC64.IsPOWER9 {
-		t.Log("CPU is pre-POWER9; VPMSUMD kernel branch not exercised on this host")
-		return
-	}
+	// VPMSUMD kernel: ISA-2.07 baseline, runs on every ppc64le host (POWER8+),
+	// so force it on unconditionally.
 	hasKernel = true
 	check("vpmsumd")
 
@@ -63,5 +56,16 @@ func TestDispatchPPC64LE(t *testing.T) {
 				t.Fatalf("%s n=%d: vpmsumd=(%016x,%016x) go=(%016x,%016x)", p.name, n, kh, kl, gh, gl)
 			}
 		}
+	}
+}
+
+// TestPPCMinBulk covers both branches of the per-CPU kernel-engagement floor on
+// any host (the POWER9-emulated CI lane only ever exercises one branch of init).
+func TestPPCMinBulk(t *testing.T) {
+	if got := ppcMinBulk(true); got != 512 {
+		t.Fatalf("ppcMinBulk(POWER9) = %d, want 512", got)
+	}
+	if got := ppcMinBulk(false); got != 4096 {
+		t.Fatalf("ppcMinBulk(POWER8) = %d, want 4096", got)
 	}
 }
