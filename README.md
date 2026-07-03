@@ -89,9 +89,15 @@ the scalar path, so small inputs are never slower than the standard library.
 shows the same large-buffer advantage over the standard library (≈2× in a
 virtualized measurement environment; native silicon is higher).
 
-**ppc64le / s390x:** the `VPMSUMD` and `VGFMAG` kernels are validated for
-correctness under QEMU; native-hardware performance numbers are pending access to
-real POWER / Z systems.
+**ppc64le:** the `VPMSUMD` kernel is validated for correctness under QEMU;
+native-hardware performance numbers are pending access to real POWER.
+
+**s390x — measured on real z15** (LPAR guest, VXE2, Ubuntu 6.8, go1.26.4,
+2026-07-03): the `VGFMAG` kernel hits **16307 MB/s vs stdlib 1798 = 9.07×**
+on `Checksum/1M`. At small sizes (64 B, 256 B) the kernel is at stdlib
+parity (fixed setup cost); the win scales with input size — 8.7 GB/s at
+16 KiB, 16.3 GB/s at 1 MiB. This is what z-hardware CRC (VGFMAG) delivers
+on real silicon.
 
 ## Testing
 
