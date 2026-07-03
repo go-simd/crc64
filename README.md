@@ -89,9 +89,12 @@ the scalar path, so small inputs are never slower than the standard library.
 shows the same large-buffer advantage over the standard library (≈2× in a
 virtualized measurement environment; native silicon is higher).
 
-**ppc64le / s390x:** the `VPMSUMD` and `VGFMAG` kernels are validated for
-correctness under QEMU; native-hardware performance numbers are pending access to
-real POWER / Z systems.
+**s390x (`VGFMAG`):** **measured on real IBM z15 (VXE2)** (native execution,
+2026-07-03, `-count=6`): the vector Galois-field-multiply folding kernel runs
+**~9.1× the `hash/crc64` scalar path** on a bulk buffer.
+
+**ppc64le (`VPMSUMD`):** the kernel is validated for correctness under QEMU;
+native-hardware performance is pending access to a real POWER system.
 
 ## Testing
 
