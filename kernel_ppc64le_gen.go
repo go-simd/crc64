@@ -46,8 +46,8 @@ import (
 // VSR not live across the sequence; vst and scratch must differ.
 func emitVSRDD(b *ppc64.Builder, rhi, rlo, vst, scratch string) *ppc64.Builder {
 	return b.
-		Raw("MTVSRD %s, %s", rhi, vst).         // vst   = [d0=rhi, d1=0]
-		Raw("MTVSRD %s, %s", rlo, scratch).     // scr   = [d0=rlo, d1=0]
+		Raw("MTVSRD %s, %s", rhi, vst).                   // vst   = [d0=rhi, d1=0]
+		Raw("MTVSRD %s, %s", rlo, scratch).               // scr   = [d0=rlo, d1=0]
 		Raw("XXPERMDI %s, %s, $0, %s", vst, scratch, vst) // vst = [d0=rhi, d1=rlo]
 }
 
@@ -70,34 +70,34 @@ func main() {
 		LoadArg("init", "R5").
 		LoadArg("c", "R6").
 		// Constants: stepLo @0, stepHi @8 -> V3 = [d0=stepHi, d1=stepLo].
-		Raw("MOVD 0(R6), R9").  // stepLo
-		Raw("MOVD 8(R6), R10")  // stepHi
+		Raw("MOVD 0(R6), R9"). // stepLo
+		Raw("MOVD 8(R6), R10") // stepHi
 	emitVSRDD(b, "R10", "R9", "VS35", "VS37"). // d0=stepHi, d1=stepLo  (V3)
 		// First block -> acc V0 = [d0=hi=bytes8..15, d1=lo=bytes0..7^init].
 		Raw("MOVD 0(R3), R7"). // lo = le64(b[0:])
 		Raw("MOVD 8(R3), R8"). // hi = le64(b[8:])
 		Raw("XOR R5, R7, R7")  // lo ^= init
 	emitVSRDD(b, "R8", "R7", "VS32", "VS37"). // d0=hi, d1=lo  (V0)
-		Raw("ADD $16, R3, R3").
-		Raw("ADD $-16, R4, R4").
-		Label("loop").
-		Raw("CMP R4, $16").
-		Raw("BLT done").
-		Raw("VPMSUMD V0, V3, V2"). // V2 = acc.lo*stepLo ^ acc.hi*stepHi
-		Raw("MOVD 0(R3), R7").     // next lo
-		Raw("MOVD 8(R3), R8")      // next hi
+							Raw("ADD $16, R3, R3").
+							Raw("ADD $-16, R4, R4").
+							Label("loop").
+							Raw("CMP R4, $16").
+							Raw("BLT done").
+							Raw("VPMSUMD V0, V3, V2"). // V2 = acc.lo*stepLo ^ acc.hi*stepHi
+							Raw("MOVD 0(R3), R7").     // next lo
+							Raw("MOVD 8(R3), R8")      // next hi
 	emitVSRDD(b, "R8", "R7", "VS32", "VS37"). // V0 = next block
-		Raw("XXLXOR VS32, VS34, VS32"). // V0 ^= V2
-		Raw("ADD $16, R3, R3").
-		Raw("ADD $-16, R4, R4").
-		Raw("BR loop").
-		Label("done").
-		Raw("MFVSRD VS32, R7"). // d0 = hi
-		Raw("XXPERMDI VS32, VS32, $2, VS33").
-		Raw("MFVSRD VS33, R8"). // d1 = lo
-		StoreRet("R7", "hi").
-		StoreRet("R8", "lo").
-		Ret()
+							Raw("XXLXOR VS32, VS34, VS32"). // V0 ^= V2
+							Raw("ADD $16, R3, R3").
+							Raw("ADD $-16, R4, R4").
+							Raw("BR loop").
+							Label("done").
+							Raw("MFVSRD VS32, R7"). // d0 = hi
+							Raw("XXPERMDI VS32, VS32, $2, VS33").
+							Raw("MFVSRD VS33, R8"). // d1 = lo
+							StoreRet("R7", "hi").
+							StoreRet("R8", "lo").
+							Ret()
 
 	f := emit.NewFile("ppc64le")
 	f.Add(b.Func())
