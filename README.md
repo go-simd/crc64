@@ -82,8 +82,12 @@ Honest numbers, `ECMA` polynomial, single call over a buffer of the given size.
 | 16 KiB | 7613 MB/s | 2034 MB/s | 3.7× |
 | 1 MiB  | 8271 MB/s | 1977 MB/s | 4.2× |
 
-The crossover is a few hundred bytes; below `minBulk` (512 B) the package uses
-the scalar path, so small inputs are never slower than the standard library.
+The kernel is engaged from 32 B on amd64 and arm64 (`minBulk`); below that an own
+slicing-by-8 table path is used. Measured on GitHub Actions runners
+(back-to-back, same job, median of 6), this package is at least the standard
+library at every size from 1 B to 10 MiB: 1.9x at 1 B, 2.7x at 16 B, 2.9x at
+64 B, 4.1x at 256 B and 3.5-4.2x above 1 KiB. Full tables for amd64 and arm64 in
+[BENCHMARKS.md](BENCHMARKS.md).
 
 **amd64 (`PCLMULQDQ`):** validated for correctness on real x86-64 hardware and
 shows the same large-buffer advantage over the standard library (≈2× in a

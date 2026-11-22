@@ -24,7 +24,7 @@ jobs:
           go env GOARCH GOAMD64
       - name: benchmark (go-simd vs hash/crc64 stdlib)
         run: |
-          go test -run '^$' -bench 'Checksum' -benchmem -count=6 . | tee bench-amd64.txt
+          go test -run '^$' -bench 'Vs|Crossover' -benchmem -count=6 . | tee bench-amd64.txt
       - uses: actions/upload-artifact@v7
         with:
           name: bench-amd64

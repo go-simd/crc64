@@ -17,6 +17,11 @@ import (
 // ~1 KiB, measured on cfarm433).
 var minBulk = 512
 
+// stdUpdate is the stdlib scalar update, used only for custom polynomials (the
+// predefined ones have their own slicing tables). A var so a test can prove the
+// predefined polynomials never reach it.
+var stdUpdate = stdcrc64.Update
+
 // polyOf recovers the reflected polynomial from a table. In hash/crc64's
 // reflected table, entry 128 (0b1000_0000) shifts its single set bit down to
 // bit 0 over the eight inner iterations and XORs the polynomial exactly once,
@@ -130,8 +135,12 @@ func constantsFor(poly uint64) *foldConstants {
 // hash/crc64.Update. It routes large inputs through the CLMUL kernel and uses
 // the standard scalar code for small inputs and the sub-16-byte tail.
 func update(crc uint64, tab *Table, p []byte) uint64 {
+	t := slicingFor(tab)
 	if len(p) < minBulk || !hasKernel {
-		return stdcrc64.Update(crc, tab, p)
+		if t != nil {
+			return updateSlicing8(crc, t, p)
+		}
+		return stdUpdate(crc, tab, p)
 	}
 	poly := polyOf(tab)
 	c := constantsFor(poly)
@@ -146,11 +155,15 @@ func update(crc uint64, tab *Table, p []byte) uint64 {
 
 	hi, lo := foldKernel(p[:bulkLen], init, c)
 
-	folded := reduce128(hi, lo, poly)
+	folded := reduceTable(hi, lo, tab, t)
 	res := ^folded
 
 	if tail := p[bulkLen:]; len(tail) > 0 {
-		res = stdcrc64.Update(res, tab, tail)
+		if t != nil {
+			res = updateSlicing8(res, t, tail)
+		} else {
+			res = stdUpdate(res, tab, tail)
+		}
 	}
 	return res
 }
