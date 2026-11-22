@@ -59,13 +59,10 @@ func TestDispatchPPC64LE(t *testing.T) {
 	}
 }
 
-// TestPPCMinBulk covers both branches of the per-CPU kernel-engagement floor on
-// any host (the POWER9-emulated CI lane only ever exercises one branch of init).
+// TestPPCMinBulk pins the kernel-engagement floor: 48 B on POWER8 and POWER9
+// alike (measured crossover, see kernel_ppc64le.go).
 func TestPPCMinBulk(t *testing.T) {
-	if got := ppcMinBulk(true); got != 512 {
-		t.Fatalf("ppcMinBulk(POWER9) = %d, want 512", got)
-	}
-	if got := ppcMinBulk(false); got != 4096 {
-		t.Fatalf("ppcMinBulk(POWER8) = %d, want 4096", got)
+	if minBulk != 48 {
+		t.Fatalf("minBulk = %d, want 48", minBulk)
 	}
 }

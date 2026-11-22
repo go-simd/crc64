@@ -68,6 +68,26 @@ func itoa(n int) string {
 	return string(b[i:])
 }
 
+// BenchmarkShort fills in the sizes BenchmarkVs skips (2..15 B, and the ones
+// around the kernel floor), this package against hash/crc64, back to back.
+func BenchmarkShort(b *testing.B) {
+	tab := MakeTable(ECMA)
+	std := stdcrc64.MakeTable(stdcrc64.ECMA)
+	for _, n := range []int{2, 7, 15, 17, 24, 31, 33, 47, 49, 127} {
+		data := benchData(n)
+		b.Run(sizeName(n)+"/simd", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_ = Checksum(data, tab)
+			}
+		})
+		b.Run(sizeName(n)+"/std", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_ = stdcrc64.Checksum(data, std)
+			}
+		})
+	}
+}
+
 // BenchmarkVs runs this package and hash/crc64 back to back at every size, so
 // one -count=N run interleaves the two (go-simd/crc64#20).
 func BenchmarkVs(b *testing.B) {
@@ -82,6 +102,14 @@ func BenchmarkVs(b *testing.B) {
 			}
 		})
 		b.Run(sizeName(n)+"/std", func(b *testing.B) {
+			b.SetBytes(int64(n))
+			for i := 0; i < b.N; i++ {
+				_ = stdcrc64.Checksum(data, std)
+			}
+		})
+		// std2 is the A/A control: the same code as std, so the std/std2
+		// ratio is the noise floor of this run.
+		b.Run(sizeName(n)+"/std2", func(b *testing.B) {
 			b.SetBytes(int64(n))
 			for i := 0; i < b.N; i++ {
 				_ = stdcrc64.Checksum(data, std)
