@@ -17,3 +17,9 @@ func foldKernel(p []byte, init uint64, c *foldConstants) (hi, lo uint64)
 // reported, e.g. on darwin where the cpu package does not probe it) the stdlib
 // scalar path is used.
 var hasKernel = cpu.ARM64.HasPMULL || runtime.GOOS == "darwin"
+
+// minBulk on arm64: measured on Apple M4 Max (PMULL), the fold kernel beats the
+// slicing-by-8 path from 32 B (6.2 ns vs 9.0 ns) and is 7x faster at 256 B
+// (14.8 ns vs 110.6 ns); at 16 B slicing wins (4.4 ns vs 5.7 ns).
+// BenchmarkCrossover reproduces the table.
+func init() { minBulk = 32 }
