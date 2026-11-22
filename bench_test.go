@@ -46,7 +46,7 @@ func BenchmarkStdlibChecksum(b *testing.B) {
 func sizeName(n int) string {
 	switch {
 	case n >= 1<<20:
-		return "1M"
+		return itoa(n>>20) + "M"
 	case n >= 1024:
 		return itoa(n/1024) + "K"
 	default:
@@ -66,4 +66,26 @@ func itoa(n int) string {
 		n /= 10
 	}
 	return string(b[i:])
+}
+
+// BenchmarkVs runs this package and hash/crc64 back to back at every size, so
+// one -count=N run interleaves the two (go-simd/crc64#20).
+func BenchmarkVs(b *testing.B) {
+	tab := MakeTable(ECMA)
+	std := stdcrc64.MakeTable(stdcrc64.ECMA)
+	for _, n := range append(append([]int{}, benchSizes...), 10<<20) {
+		data := benchData(n)
+		b.Run(sizeName(n)+"/simd", func(b *testing.B) {
+			b.SetBytes(int64(n))
+			for i := 0; i < b.N; i++ {
+				_ = Checksum(data, tab)
+			}
+		})
+		b.Run(sizeName(n)+"/std", func(b *testing.B) {
+			b.SetBytes(int64(n))
+			for i := 0; i < b.N; i++ {
+				_ = stdcrc64.Checksum(data, std)
+			}
+		})
+	}
 }

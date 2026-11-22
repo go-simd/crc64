@@ -1,0 +1,27 @@
+name: bench-arm64
+# Native arm64 (PMULL) perf on the ubuntu-24.04-arm GitHub Actions runner. Ratios
+# measured back-to-back in the SAME job on the SAME CPU (go-simd vs hash/crc64)
+# are valid; absolute ns/op on a shared runner is noisy.
+# Manual: gh workflow run bench-arm64.yml
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['.github/workflows/bench-arm64.yml']
+jobs:
+  bench:
+    runs-on: ubuntu-24.04-arm # native arm64
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with: { go-version: '1.27.3' }
+      - name: record CPU
+        run: |
+          lscpu
+          go env GOARCH
+      - name: benchmark (go-simd vs hash/crc64 stdlib, interleaved)
+        run: |
+          go test -bench 'Vs|Crossover' -benchmem -count=6 . | tee bench-arm64.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bench-arm64
+          path: bench-arm64.txt
