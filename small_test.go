@@ -58,3 +58,25 @@ func TestSmallInputsExact(t *testing.T) {
 		}
 	}
 }
+
+// TestPredefinedNeverUseStdlib holds the dispatch: ISO/ECMA never reach the
+// stdlib update (small or kernel path), a custom polynomial always does.
+func TestPredefinedNeverUseStdlib(t *testing.T) {
+	saved := stdUpdate
+	defer func() { stdUpdate = saved }()
+	calls := 0
+	stdUpdate = func(crc uint64, tab *Table, p []byte) uint64 {
+		calls++
+		return saved(crc, tab, p)
+	}
+	data := make([]byte, 700)
+	for _, n := range []int{5, 40, 700} {
+		for _, p := range polys {
+			calls = 0
+			Update(0, MakeTable(p.poly), data[:n])
+			if (p.name == "custom") != (calls > 0) {
+				t.Fatalf("%s n=%d: stdlib update calls=%d", p.name, n, calls)
+			}
+		}
+	}
+}

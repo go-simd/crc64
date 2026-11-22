@@ -17,6 +17,11 @@ import (
 // ~1 KiB, measured on cfarm433).
 var minBulk = 512
 
+// stdUpdate is the stdlib scalar update, used only for custom polynomials (the
+// predefined ones have their own slicing tables). A var so a test can prove the
+// predefined polynomials never reach it.
+var stdUpdate = stdcrc64.Update
+
 // polyOf recovers the reflected polynomial from a table. In hash/crc64's
 // reflected table, entry 128 (0b1000_0000) shifts its single set bit down to
 // bit 0 over the eight inner iterations and XORs the polynomial exactly once,
@@ -135,7 +140,7 @@ func update(crc uint64, tab *Table, p []byte) uint64 {
 		if t != nil {
 			return updateSlicing8(crc, t, p)
 		}
-		return stdcrc64.Update(crc, tab, p)
+		return stdUpdate(crc, tab, p)
 	}
 	poly := polyOf(tab)
 	c := constantsFor(poly)
@@ -157,7 +162,7 @@ func update(crc uint64, tab *Table, p []byte) uint64 {
 		if t != nil {
 			res = updateSlicing8(res, t, tail)
 		} else {
-			res = stdcrc64.Update(res, tab, tail)
+			res = stdUpdate(res, tab, tail)
 		}
 	}
 	return res
