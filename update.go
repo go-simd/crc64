@@ -130,7 +130,11 @@ func constantsFor(poly uint64) *foldConstants {
 // hash/crc64.Update. It routes large inputs through the CLMUL kernel and uses
 // the standard scalar code for small inputs and the sub-16-byte tail.
 func update(crc uint64, tab *Table, p []byte) uint64 {
+	t := slicingFor(tab)
 	if len(p) < minBulk || !hasKernel {
+		if t != nil {
+			return updateSlicing8(crc, t, p)
+		}
 		return stdcrc64.Update(crc, tab, p)
 	}
 	poly := polyOf(tab)
@@ -146,11 +150,15 @@ func update(crc uint64, tab *Table, p []byte) uint64 {
 
 	hi, lo := foldKernel(p[:bulkLen], init, c)
 
-	folded := reduce128(hi, lo, poly)
+	folded := reduceTable(hi, lo, tab, t)
 	res := ^folded
 
 	if tail := p[bulkLen:]; len(tail) > 0 {
-		res = stdcrc64.Update(res, tab, tail)
+		if t != nil {
+			res = updateSlicing8(res, t, tail)
+		} else {
+			res = stdcrc64.Update(res, tab, tail)
+		}
 	}
 	return res
 }

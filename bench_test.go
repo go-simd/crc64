@@ -13,9 +13,13 @@ func benchData(n int) []byte {
 	return b
 }
 
+// benchSizes include the short inputs (1, 16, 64, 256 B) where the fixed cost
+// of the kernel dominates: go-simd/crc64#20.
+var benchSizes = []int{1, 16, 64, 256, 1024, 4096, 16384, 1 << 20}
+
 func BenchmarkChecksum(b *testing.B) {
 	tab := MakeTable(ECMA)
-	for _, n := range []int{64, 256, 1024, 16384, 1 << 20} {
+	for _, n := range benchSizes {
 		data := benchData(n)
 		b.Run(sizeName(n), func(b *testing.B) {
 			b.SetBytes(int64(n))
@@ -28,7 +32,7 @@ func BenchmarkChecksum(b *testing.B) {
 
 func BenchmarkStdlibChecksum(b *testing.B) {
 	tab := stdcrc64.MakeTable(stdcrc64.ECMA)
-	for _, n := range []int{64, 256, 1024, 16384, 1 << 20} {
+	for _, n := range benchSizes {
 		data := benchData(n)
 		b.Run(sizeName(n), func(b *testing.B) {
 			b.SetBytes(int64(n))
