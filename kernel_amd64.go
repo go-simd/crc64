@@ -13,3 +13,9 @@ func foldKernel(p []byte, init uint64, c *foldConstants) (hi, lo uint64)
 // the host CPU. When PCLMULQDQ is absent the stdlib scalar path is used (it is
 // faster than any software-emulated carryless multiply).
 var hasKernel = cpu.X86.HasPCLMULQDQ
+
+// minBulk on amd64: measured on the GitHub Actions bench-amd64 runner (shared
+// AMD EPYC, ratios valid), the fold kernel beats slicing-by-8 from 32 B
+// (13.8 ns vs 19.8 ns) and is 4.3x faster at 256 B (35.0 ns vs 151.7 ns).
+// BenchmarkCrossover reproduces the table; run bench-amd64.yml.
+func init() { minBulk = 32 }
