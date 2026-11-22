@@ -8,6 +8,13 @@ import "golang.org/x/sys/cpu"
 // kernel_s390x.s. It requires len(p) >= 16 and len(p) % 16 == 0.
 func foldKernel(p []byte, init uint64, c *foldConstants) (hi, lo uint64)
 
+// minBulk on s390x: measured with BenchmarkCrossover on a real IBM z17 (LinuxONE,
+// VXE2), -count=6, slicing-by-8 path vs the VGFMAG kernel on the same input. The
+// kernel loses at 16 B (18.6 vs 11.9 ns) and wins from 32 B (19.9 vs 22.0 ns),
+// by 2.4x at 64 B and 5x at 256 B. The old floor of 512 B left 256 B at 0.87x of
+// hash/crc64 (go-simd/crc64#20).
+func init() { minBulk = 32 }
+
 // hasKernel gates update() onto the vector kernel. It is a var so tests can force
 // the stdlib scalar fallback. When the vector facility is absent the scalar path
 // is used.
